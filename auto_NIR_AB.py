@@ -1,6 +1,6 @@
 import astropy.io.ascii as asci
 import numpy as np
-import sys
+import sys, os
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy import table
@@ -14,6 +14,12 @@ of two files that can subtract each other
 
 files = sys.argv[1]
 
+#Copy the file as a backup
+os.system('cp %s %s.backup'%(files,files))
+
+#Open a new pypeit file to write the header to. 
+new_file = open('ABBA_%s'%files, 'w')
+
 #Find where data start
 f = open(files, 'r')
 header_line = None
@@ -25,17 +31,30 @@ for line in f:
             valid_line += 1
             if '|' in line and header_line is None:
                 header_line = valid_line
-    # else:
-    #   valid_line += 1
+                break #break here so we only include the preamble and not the "data end" line at the end.
+            elif '|' not in line:
+                new_file.write(line)
+                if "spectrograph = keck_nires" in line:
+                    ###############################IMPORTANT. This forces the object ID algorithm to only find
+                    #one brightest object with an SNR threshold of 5 sigma. 
+                    new_file.write("[reduce]\n\t[[findobj]]\n\t\tmaxnumber_sci = 1\n\t\tsnr_thresh = 5.0\n")
+        else:
+            new_file.write(line)
+    else:
+        new_file.write(line)
+
+new_file.close()
+
 # print(header_line)
 
 giant_table = asci.read(files, format = 'fixed_width', header_start=header_line-1, data_start=header_line)
 #remove "data end"
 giant_table = giant_table[:-1]
 
-print(giant_table)
+# print(giant_table)
 
 #########assign all HIP stars to "standard"##########################
+#########set calib to 'all' for flats################################
 max_comb_id = np.nanmax(giant_table['comb_id'])
 
 for i in giant_table:
@@ -45,7 +64,10 @@ for i in giant_table:
         max_comb_id += 1
     if 'science' in i['frametype']:
         i['calib'] = i['comb_id'] 
+    if 'pixelflat,trace' in i['frametype']:
+        i['calib'] = 'all'
 print(giant_table)
+
 
 #########Pair things up in AB or BA pairs############################
 for ind, i in enumerate(giant_table):
@@ -65,8 +87,8 @@ sci_coord = SkyCoord(ra = unique_science['ra']*u.deg, dec = unique_science['dec'
 unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
 std_coord = SkyCoord(ra = unique_standard['ra']*u.deg, dec = unique_standard['dec']*u.deg)
 
-print(unique_science)
-print(unique_standard)
+# print(unique_science)
+# print(unique_standard)
 
 print("Check if the following science - telluric association is correct.")
 res = sci_coord.match_to_catalog_sky(std_coord)[0]
@@ -82,14 +104,25 @@ for ind, i in enumerate(unique_science):
 for ind, i in enumerate(unique_science):
     science_id = giant_table[giant_table['target'] == i['target']]['comb_id']
     telluric_name = unique_standard[res[ind]]["target"]
-    # print(science_id[0:len(giant_table[giant_table['target'] == telluric_name])])
-    # giant_table[giant_table['target'] == telluric_name]['calib'] = science_id[0:len(giant_table[giant_table['target'] == telluric_name])]
-    # for jnd, j in enumerate(giant_table[giant_table['target'] == telluric_name]):
-    #     print(j)
-    #     j['calib'] = science_id[jnd]
-    #     print(j)
-    for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
-        giant_table[j]['calib'] = science_id[jnd]
+    # print(i['target'], telluric_name)
+    # print(np.where(giant_table['target'] == telluric_name)[0])
+    #if science is in ABBA
+    if len(np.where(giant_table['target'] == telluric_name)[0]) ==  len(science_id):
+        for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
+            giant_table[j]['calib'] = science_id[jnd]
+    #if science is in AB
+    # elif (len(np.where(giant_table['target'] == telluric_name)[0]) == 4) and (len(science_id) == 2):
+    #     for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
+    #         giant_table[j]['calib'] = science_id[jnd]
+    else:
+        print("Manually check the calib_id of %s"%(telluric_name))
 
 print(giant_table)
-giant_table.write('temp.pypeit', format = 'ascii.fixed_width', delimiter = '|')
+giant_table.write('temp.pypeit', format = 'ascii.fixed_width', \
+    delimiter = '|', bookend=False, comment=False, overwrite = True)
+
+#concatenate the table to the new header
+os.system('cat temp.pypeit >> ABBA_%s'%files)
+os.system('echo "data end" >> ABBA_%s'%files)
+os.system('rm temp.pypeit')
+
