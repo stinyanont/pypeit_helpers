@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
         out_fn = obj+'_'+tel+'_'+inst+'_'+date+'.png'
         out_txt = obj+'_'+tel+'_'+inst+'_'+date+'.flm'
-        asci.write(spec, out_txt, format = 'no_header', delimiter = ',', overwrite = True)
+        asci.write(spec, out_txt, format = 'no_header', delimiter = ' ', overwrite = True)
 
         ##Deal with range
         # good_snr = spec[1,:]/spec[2,:] > 5
