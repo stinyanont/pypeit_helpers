@@ -47,7 +47,7 @@ if __name__ == '__main__':
         spec = Table([spec_data['wave'], spec_data['flux'], np.sqrt(spec_data['ivar'])], names = ('wavelength', 'flux', 'fluxerr'))
         sn_coord = SkyCoord(ra = hdr[0].header['RA']*u.deg, dec = hdr[0].header['DEC']*u.deg)
         ###Table to write
-        spec.meta['comments'] = ['GROUPS UCSC,YSE,KITS', 'SNID %s'%(obj), 'OBS_GROUP UCSC', 
+        spec.meta['comments'] = ['wavelength flux fluxerr', 'GROUPS UCSC,YSE,KITS', 'SNID %s'%(obj), 'OBS_GROUP UCSC', 
 									'OBS_DATE %s %s'%(date, timeobs), 'INSTRUMENT %s'%inst,
 									'RA %f'%sn_coord.ra.deg, 'DEC %f'%sn_coord.dec.deg]
 

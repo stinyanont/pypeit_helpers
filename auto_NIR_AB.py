@@ -111,9 +111,9 @@ for ind, i in enumerate(unique_science):
         for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
             giant_table[j]['calib'] = science_id[jnd]
     #if science is in AB
-    # elif (len(np.where(giant_table['target'] == telluric_name)[0]) == 4) and (len(science_id) == 2):
-    #     for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
-    #         giant_table[j]['calib'] = science_id[jnd]
+    elif len(np.where(giant_table['target'] == telluric_name)[0]) > len(science_id)  :
+        for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
+            giant_table[j]['calib'] = science_id[jnd]
     else:
         print("Manually check the calib_id of %s"%(telluric_name))
 
