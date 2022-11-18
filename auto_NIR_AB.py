@@ -78,13 +78,15 @@ giant_table = giant_table[:-1]
 max_comb_id = np.nanmax(giant_table['comb_id'])
 
 #Set calibration indices
+calib = 0
 for i in giant_table:
-    if 'HIP' in i['target']:
+    if ('HIP' in i['target']) & (i['frametype'] == 'None'):
         i['frametype'] = 'standard'
         i['comb_id'] = max_comb_id + 1
         max_comb_id += 1
     if 'science' in i['frametype']:
-        i['calib'] = i['comb_id'] 
+        i['calib'] = calib
+        calib += 1 
     if 'pixelflat,trace' in i['frametype']:
         i['calib'] = 'all'
 # print(giant_table)
@@ -169,11 +171,42 @@ for ind, i in enumerate(unique_science):
         print("Manually check the calib_id of %s"%(telluric_name))
 
 # print(giant_table)
-giant_table.write('temp.pypeit', format = 'ascii.fixed_width', \
-    delimiter = '|', bookend=False, comment=False, overwrite = True)
 
-#concatenate the table to the new header
-os.system('cat temp.pypeit >> ABBA_%s'%files)
-os.system('echo "data end" >> ABBA_%s'%files)
-os.system('rm temp.pypeit')
+# print(np.array(giant_table['calib'][(giant_table['calib'] != 'all') & (giant_table['calib'] != 'None')]))
+max_calib = np.max(np.array(giant_table['calib'][(giant_table['calib'] != 'all') & (giant_table['calib'] != 'None')]).astype(int))
+
+if max_calib <64: #pypeit can't deal with this. split the files...
+    
+    giant_table.write('temp.pypeit', format = 'ascii.fixed_width', \
+        delimiter = '|', bookend=False, comment=False, overwrite = True)
+
+    #concatenate the table to the new header
+    os.system('cat temp.pypeit >> ABBA_%s'%files)
+    os.system('echo "data end" >> ABBA_%s'%files)
+    os.system('rm temp.pypeit')
+
+elif 64 <= max_calib < 128: #hope that it's not more than 128
+    table1 = giant_table[giant_table['calib'] < 64]
+    table2 = giant_table[giant_table['calib'] >= 64]
+
+    table1.write('temp1.pypeit', format = 'ascii.fixed_width', \
+        delimiter = '|', bookend=False, comment=False, overwrite = True)
+    table2.write('temp2.pypeit', format = 'ascii.fixed_width', \
+        delimiter = '|', bookend=False, comment=False, overwrite = True)
+
+    os.system('cp ABBA_%s ABBA_%s1'%(files, files))
+    os.system('mv ABBA_%s ABBA_%s2'%(files, files))
+
+    os.system('cat temp1.pypeit >> ABBA_%s1'%files)
+    os.system('echo "data end" >> ABBA_%s'%files)
+    os.system('rm temp1.pypeit')
+
+    os.system('cat temp2.pypeit >> ABBA_%s2'%files)
+    os.system('echo "data end" >> ABBA_%s'%files)
+    os.system('rm temp2.pypeit')
+
+
+
+
+
 
