@@ -12,6 +12,26 @@ AB pattern. Here, ABBA or ABAB doesn't matter, as long as they're in sets
 of two files that can subtract each other
 """
 
+def make_ABBA(list):
+    "Given a list, assign the indices into two lists of A and B positions"
+    if len(list) % 2 == 0: #even number only
+        BA = 0
+        a = []
+        b = []
+        for ind in range(len(list) // 2):
+            if BA == 0:
+                a += [list[2 * ind]]
+                b += [list[2 * ind + 1]]
+                BA = 1
+            else:
+                a += [list[2 * ind + 1]]
+                b += [list[2 * ind]]
+                BA = 0
+        return np.array(a), np.array(b)
+    else:
+        print("Input must be of even length.")
+        return None
+
 files = sys.argv[1]
 
 #Copy the file as a backup
@@ -57,6 +77,7 @@ giant_table = giant_table[:-1]
 #########set calib to 'all' for flats################################
 max_comb_id = np.nanmax(giant_table['comb_id'])
 
+#Set calibration indices
 for i in giant_table:
     if 'HIP' in i['target']:
         i['frametype'] = 'standard'
@@ -66,7 +87,7 @@ for i in giant_table:
         i['calib'] = i['comb_id'] 
     if 'pixelflat,trace' in i['frametype']:
         i['calib'] = 'all'
-print(giant_table)
+# print(giant_table)
 
 
 #########Pair things up in AB or BA pairs############################
@@ -82,10 +103,32 @@ for ind, i in enumerate(giant_table):
             print("File %s does not have a subtraction pair. Check .pypeit file."%(i['filename']))
 
 #########Lastly, find an appropriate calibration for telluric. 
+
+####For science frames with <=180 s exposure, combine A's and B's for calibrations first, otherwise 
+####wavelength solution fails
+
+
 unique_science = table.unique(giant_table[giant_table['frametype'] == 'arc,science,tilt'], 'target')
 sci_coord = SkyCoord(ra = unique_science['ra']*u.deg, dec = unique_science['dec']*u.deg)
 unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
 std_coord = SkyCoord(ra = unique_standard['ra']*u.deg, dec = unique_standard['dec']*u.deg)
+
+for sci in unique_science:
+    exp_times = list(set(giant_table['exptime'][giant_table['target']==sci['target']]))
+    if (len(exp_times) == 1) & (exp_times[0] <= 180) : #one exposure times, < 180s
+        # print(giant_table['target', 'calib', 'comb_id'][giant_table['target']==sci['target']])
+        idx = np.where(giant_table['target']==sci['target'])[0]
+        if (np.sum(giant_table['target']==sci['target']) >=4) & (np.sum(giant_table['target']==sci['target']) % 2 == 0): #ABBA
+            # giant_table['calib'][idx[2]] = giant_table['calib'][idx[1]]
+            # giant_table['calib'][idx[3]] = giant_table['calib'][idx[0]]
+            As, Bs = make_ABBA(idx)
+            giant_table['calib'][As] = giant_table['calib'][As[0]] #set all A's to the same calib id
+            giant_table['calib'][Bs] = giant_table['calib'][Bs[0]] #set all B's to the same calib id
+
+        # print(giant_table['target', 'calib', 'comb_id'][giant_table['target']==sci['target']])
+
+#redo unique_science to update the calib id
+unique_science = table.unique(giant_table[giant_table['frametype'] == 'arc,science,tilt'], 'target')
 
 # print(unique_science)
 # print(unique_standard)
@@ -102,22 +145,30 @@ for ind, i in enumerate(unique_science):
     )
 
 for ind, i in enumerate(unique_science):
-    science_id = giant_table[giant_table['target'] == i['target']]['comb_id']
+    science_id = np.array(giant_table[giant_table['target'] == i['target']]['calib'])
     telluric_name = unique_standard[res[ind]]["target"]
     # print(i['target'], telluric_name)
     # print(np.where(giant_table['target'] == telluric_name)[0])
     #if science is in ABBA
-    if len(np.where(giant_table['target'] == telluric_name)[0]) ==  len(science_id):
+    if len(np.where(giant_table['target'] == telluric_name)[0]) <=  len(science_id):
         for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
             giant_table[j]['calib'] = science_id[jnd]
-    #if science is in AB
-    elif len(np.where(giant_table['target'] == telluric_name)[0]) > len(science_id)  :
+    #if science is in AB, but telluric is ABBA
+    elif (len(np.where(giant_table['target'] == telluric_name)[0])==4)  & (len(science_id)==2):
+        science_id = np.concatenate([science_id , science_id[::-1]])
         for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
             giant_table[j]['calib'] = science_id[jnd]
+    #Two sets of Telluric ABBA, ABBA
+    elif len(np.where(giant_table['target'] == telluric_name)[0]) ==  2*len(science_id):
+        # print(science_id)
+        science_id = np.concatenate([science_id , science_id])
+        # print(science_id)
+        for jnd, j in enumerate(np.where(giant_table['target'] == telluric_name)[0]):
+            giant_table[j]['calib'] = science_id[jnd]       
     else:
         print("Manually check the calib_id of %s"%(telluric_name))
 
-print(giant_table)
+# print(giant_table)
 giant_table.write('temp.pypeit', format = 'ascii.fixed_width', \
     delimiter = '|', bookend=False, comment=False, overwrite = True)
 
