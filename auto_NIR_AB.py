@@ -57,7 +57,7 @@ for line in f:
                 if "spectrograph = keck_nires" in line:
                     ###############################IMPORTANT. This forces the object ID algorithm to only find
                     #one brightest object with an SNR threshold of 5 sigma. 
-                    new_file.write("[reduce]\n\t[[findobj]]\n\t\tmaxnumber_sci = 1\n\t\tsnr_thresh = 5.0\n")
+                    new_file.write("[reduce]\n\t[[findobj]]\n\t\tmaxnumber_sci = 1\n\t\tmaxnumber_std = 1\n\t\tsnr_thresh = 5.0\n")
         else:
             new_file.write(line)
     else:

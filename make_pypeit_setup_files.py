@@ -166,3 +166,38 @@ for ind, i in enumerate(unique_science):
 for ind, i in enumerate(unique_standard):
 	f.write('pypeit_tellfit %s_corrected_coadd.fits -t %s_telluric_input.tel \n'%(i["target"], i["target"]))
 f.close()
+
+############Apply A0V telluric to science
+f = open('telluric_from_A0V.bash', 'w')
+
+#Now make coadd files
+path_to_script = '/Users/kaew/work/useful_scripts/pypeit_helpers/apply_telluric.py'
+for ind, i in enumerate(unique_science):
+	sci_name = unique_science[ind]["target"]
+	std_name = unique_standard[res[ind]]["target"]
+	sci_file = sci_name+'_corrected_coadd.fits'
+	std_model = std_name+'_corrected_coadd_tellmodel.fits'
+	f.write("python %s %s %s \n"%(path_to_script, sci_file, std_model))
+f.close()
+
+#Lastly, convert to ascii and png
+
+############Lastly, make a script to run everything!
+f = open('do_all.bash', 'w')
+
+flux = open('fluxcals.bash', 'r')
+coadd = open('coadds.bash', 'r')
+tell = open('telluric.bash', 'r')
+tellstd =open('telluric_from_A0V.bash', 'r')
+
+for line in flux:
+	f.write(line)
+f.write('pypeit_flux_calib fluxcal.flux\n')
+for line in coadd:
+	f.write(line)
+for line in tell:
+	f.write(line)
+for line in tellstd:
+	f.write(line)
+
+
