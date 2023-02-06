@@ -173,6 +173,7 @@ for ind, i in enumerate(unique_standard):
 ########BASH SCRIPT TO RUN THESE#############
 ############Script to run sensitivity function.
 f = open('fluxcals.bash', 'w')
+f.write('#!/bin/bash\n')
 all_sen_func = glob.glob('*sen_input.sen')
 
 for fn in all_sen_func:
@@ -185,6 +186,7 @@ f.close()
 
 ############Script to do coaddition. 
 f = open('coadds.bash', 'w')
+f.write('#!/bin/bash\n')
 all_coadd_file = glob.glob('*.coadd')
 
 for fn in all_coadd_file:
@@ -192,6 +194,7 @@ for fn in all_coadd_file:
 
 ############Script to do telluric
 f = open('telluric.bash', 'w')
+f.write('#!/bin/bash\n')
 for ind, i in enumerate(unique_science):
 	f.write('pypeit_tellfit %s_corrected_coadd.fits --objmodel poly \n'%i["target"])
 for ind, i in enumerate(unique_standard):
@@ -200,6 +203,7 @@ f.close()
 
 ############Apply A0V telluric to science
 f = open('telluric_from_A0V.bash', 'w')
+f.write('#!/bin/bash\n')
 
 #Now make coadd files
 path_to_script = '/Users/kaew/work/useful_scripts/pypeit_helpers/apply_telluric.py'
@@ -215,6 +219,7 @@ f.close()
 
 ############Lastly, make a script to run everything!
 f = open('do_all.bash', 'w')
+f.write('#!/bin/bash\n')
 
 flux = open('fluxcals.bash', 'r')
 coadd = open('coadds.bash', 'r')
