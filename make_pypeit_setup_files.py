@@ -2,6 +2,7 @@ import astropy.io.ascii as asci
 import numpy as np
 import sys, glob
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 import astropy.units as u
 from astropy import table
 from astroquery.simbad import Simbad
@@ -59,6 +60,7 @@ for ind, std in enumerate(std_stars):
 	tf.close()
 
 ############################################GENERATE FLUX CALIBRATION AND COADD FILES.########################################################## 
+#Matching up science to standard
 unique_science = table.unique(giant_table[giant_table['frametype'] == 'arc,science,tilt'], 'target')
 sci_coord = SkyCoord(ra = unique_science['ra']*u.deg, dec = unique_science['dec']*u.deg)
 unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
@@ -68,8 +70,20 @@ print(unique_science)
 print(unique_standard)
 
 print("Check if the following science - telluric association is correct.")
-res = sci_coord.match_to_catalog_sky(std_coord)[0]
+#res = sci_coord.match_to_catalog_sky(std_coord)[0] #This is too simplistic
 # print(res)
+res = []
+for ind, i in enumerate(unique_science):
+	sep = sci_coord[ind].separation(std_coord)
+	time_sep = (Time(unique_standard['mjd'], format = 'mjd') - Time(i['mjd'], format = 'mjd')).to(u.min)
+	# print(time_sep)
+	sep[np.abs(time_sep) > 120*u.min] = np.nan
+	print('for %s'%i['target'])
+	print(unique_standard[np.nanargmin(np.abs(sep))]['target'])
+	print(unique_standard[np.nanargmin(np.abs(time_sep))]['target'])
+	res += [np.nanargmin(np.abs(sep))]
+
+
 for ind, i in enumerate(unique_science):
     print(
         unique_science[ind]["target"],
@@ -77,6 +91,23 @@ for ind, i in enumerate(unique_science):
         unique_standard[res[ind]]["target"],
         # std_coord[res[ind]].to_string('hmsdms'),
     )
+
+# unique_science = table.unique(giant_table[giant_table['frametype'] == 'arc,science,tilt'], 'target')
+# unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
+# res = []
+# for i in unique_science:
+# 	std_idx = np.where(unique_standard['calib']==i['calib'])[0][0]
+# 	print(std_idx)
+# 	res+=[std_idx]
+
+# print("Check if the following science - telluric association is correct.")
+# for ind, i in enumerate(unique_science):
+#     print(
+#         unique_science[ind]["target"],
+#         # sci_coord[ind].to_string('hmsdms'),
+#         unique_standard[res[ind]]["target"],
+#         # std_coord[res[ind]].to_string('hmsdms'),
+#     )
 
 #Flux Calibration file
 #Now make flux calibration files
