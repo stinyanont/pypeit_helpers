@@ -68,6 +68,7 @@ print(unique_science)
 print(unique_standard)
 
 print("Check if the following science - telluric association is correct.")
+
 res = sci_coord.match_to_catalog_sky(std_coord)[0]
 # print(res)
 for ind, i in enumerate(unique_science):
