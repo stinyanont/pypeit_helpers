@@ -1,6 +1,6 @@
 import astropy.io.ascii as asci
 import numpy as np
-import sys, glob
+import sys, glob, os
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 import astropy.units as u
@@ -77,7 +77,7 @@ for ind, i in enumerate(unique_science):
 	sep = sci_coord[ind].separation(std_coord)
 	time_sep = (Time(unique_standard['mjd'], format = 'mjd') - Time(i['mjd'], format = 'mjd')).to(u.min)
 	# print(time_sep)
-	sep[np.abs(time_sep) > 120*u.min] = np.nan
+	sep[np.abs(time_sep) > 60*u.min] = np.nan
 	print('for %s'%i['target'])
 	print(unique_standard[np.nanargmin(np.abs(sep))]['target'])
 	print(unique_standard[np.nanargmin(np.abs(time_sep))]['target'])
@@ -206,7 +206,8 @@ f = open('telluric_from_A0V.bash', 'w')
 f.write('#!/bin/bash\n')
 
 #Now make coadd files
-path_to_script = '/Users/kaew/work/useful_scripts/pypeit_helpers/apply_telluric.py'
+# path_to_script = '/Users/kaew/work/useful_scripts/pypeit_helpers/apply_telluric.py'
+path_to_script = os.path.dirname(os.path.realpath(__file__))+'/apply_telluric.py'
 for ind, i in enumerate(unique_science):
 	sci_name = unique_science[ind]["target"]
 	std_name = unique_standard[res[ind]]["target"]
@@ -227,13 +228,17 @@ tell = open('telluric.bash', 'r')
 tellstd =open('telluric_from_A0V.bash', 'r')
 
 for line in flux:
-	f.write(line)
+	if line[0] != '#':
+		f.write(line)
 f.write('pypeit_flux_calib fluxcal.flux\n')
 for line in coadd:
-	f.write(line)
+	if line[0] != '#':
+		f.write(line)
 for line in tell:
-	f.write(line)
+	if line[0] != '#':
+		f.write(line)
 for line in tellstd:
-	f.write(line)
+	if line[0] != '#':
+		f.write(line)
 
 
