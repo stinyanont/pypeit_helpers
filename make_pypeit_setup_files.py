@@ -66,20 +66,24 @@ sci_coord = SkyCoord(ra = unique_science['ra']*u.deg, dec = unique_science['dec'
 unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
 std_coord = SkyCoord(ra = unique_standard['ra']*u.deg, dec = unique_standard['dec']*u.deg)
 
-print(unique_science)
-print(unique_standard)
+print(unique_science['target','ra','dec','mjd'])
+print(unique_standard['target','ra','dec','mjd'])
 
 print("Check if the following science - telluric association is correct.")
 
 res = []
 for ind, i in enumerate(unique_science):
 	sep = sci_coord[ind].separation(std_coord)
+	am_diff = unique_science[ind]['airmass'] - unique_standard['airmass']
 	time_sep = (Time(unique_standard['mjd'], format = 'mjd') - Time(i['mjd'], format = 'mjd')).to(u.min)
-	# print(time_sep)
-	sep[np.abs(time_sep) > 60*u.min] = np.nan
 	print('for %s'%i['target'])
-	print(unique_standard[np.nanargmin(np.abs(sep))]['target'])
-	print(unique_standard[np.nanargmin(np.abs(time_sep))]['target'])
+	for j in range(len(sep)):
+		print(unique_standard[j]['target'], sep[j].to(u.deg), time_sep[j], am_diff[j])
+	sep[np.abs(time_sep) > 55*u.min] = np.nan
+	am_diff[np.abs(time_sep) > 55*u.min] = np.nan
+	print("min separation: "+unique_standard[np.nanargmin(np.abs(sep))]['target'])
+	print("min time: "+unique_standard[np.nanargmin(np.abs(time_sep))]['target'])
+	print("min airmass diff: "+unique_standard[np.nanargmin(np.abs(am_diff))]['target'])
 	res += [np.nanargmin(np.abs(sep))]
 
 
@@ -219,7 +223,7 @@ f.close()
 
 ############Lastly, make a script to run everything!
 f = open('do_all.bash', 'w')
-f.write('#!/bin/bash\n')
+f.write('#!/bin/bash\nset -e\n')
 
 flux = open('fluxcals.bash', 'r')
 coadd = open('coadds.bash', 'r')
