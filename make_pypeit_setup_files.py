@@ -61,7 +61,7 @@ for ind, std in enumerate(std_stars):
 
 ############################################GENERATE FLUX CALIBRATION AND COADD FILES.########################################################## 
 #Matching up science to standard
-unique_science = table.unique(giant_table[giant_table['frametype'] == 'arc,science,tilt'], 'target')
+unique_science = table.unique(giant_table[(giant_table['frametype'] == 'arc,science,tilt')|(giant_table['frametype'] =='science')], 'target')
 sci_coord = SkyCoord(ra = unique_science['ra']*u.deg, dec = unique_science['dec']*u.deg)
 unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
 std_coord = SkyCoord(ra = unique_standard['ra']*u.deg, dec = unique_standard['dec']*u.deg)
