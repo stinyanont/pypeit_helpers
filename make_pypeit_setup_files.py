@@ -41,7 +41,7 @@ std_stars = list(set(giant_table['target'][giant_table['frametype'] == 'standard
 # for std in std_stars:
 Simbad.add_votable_fields("flux(V)")
 Simbad.add_votable_fields("sptype")
-add_mag = Simbad.query_objects(std_stars)
+add_mag = Simbad.query_objects([x.split('-')[0] for x in std_stars])
 
 print("Here are all the standard stars used this night: ")
 
