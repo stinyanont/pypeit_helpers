@@ -50,13 +50,14 @@ for ind, std in enumerate(std_stars):
 	fn = '%s_sen_input.sen'%std 
 	f = open(fn, 'w')
 	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = A0"%Vmag[ind])
-	f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
 	f.close()
 
 	tfn = '%s_telluric_input.tel'%std 
 	tf = open(tfn, 'w')
-	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = A0"%Vmag[ind])
-	tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	# tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	#For some reason a realistic magnitude makes bad telluric fit!?
+	tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s\n\tpolyorder = 5"%(10,  add_mag['SP_TYPE'][ind]))
 	tf.close()
 
 ############################################GENERATE FLUX CALIBRATION AND COADD FILES.########################################################## 

@@ -58,24 +58,27 @@ if __name__ == '__main__':
 
         ##Deal with range
         # good_snr = spec[1,:]/spec[2,:] > 5
-        YJ = np.logical_and(spec['wavelength'] > 10000, spec['wavelength'] < 13000)
-        H  = np.logical_and(spec['wavelength'] > 14200, spec['wavelength'] < 17500)
-        K  = np.logical_and(spec['wavelength'] > 20000, spec['wavelength'] < 24000)
+        if np.max(spec['wavelength'] > 15000):
+            YJ = np.logical_and(spec['wavelength'] > 10000, spec['wavelength'] < 13000)
+            H  = np.logical_and(spec['wavelength'] > 14200, spec['wavelength'] < 17500)
+            K  = np.logical_and(spec['wavelength'] > 20000, spec['wavelength'] < 24000)
 
-        # good_snr = np.logical_and(good, spec[0,:] , 13500)
-        good_snr = np.logical_or(YJ, H)
-        good_snr = np.logical_or(good_snr, K)
+            # good_snr = np.logical_and(good, spec[0,:] , 13500)
+            good_snr = np.logical_or(YJ, H)
+            good_snr = np.logical_or(good_snr, K)
+        else:
+            good_snr = (spec['flux'] > 5*spec['fluxerr'])
 
         if minwl is not None:
             good_snr = np.logical_and(good_snr, spec['wavelength'] > minwl)
 
         max_y = np.nanmax(median_filter(spec['flux'][good_snr], size= 5))
         min_y = np.nanmin(median_filter(spec['flux'][good_snr], size= 5))
-        print(fn)
+        print(fn, min_y, max_y)
         fig, ax = plt.subplots(1,1,figsize = (15,8))
 
         #smooth with median 
-        if smooth_size is None:
+        if (smooth_size is None) | (smooth_size == 0):
             ax.step(spec['wavelength'], spec['flux'], lw=1)
         else:
             ax.step(spec['wavelength'], median_filter(spec['flux'], size = smooth_size))
