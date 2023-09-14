@@ -43,14 +43,18 @@ Simbad.add_votable_fields("flux(V)")
 Simbad.add_votable_fields("sptype")
 add_mag = Simbad.query_objects([x.split('-')[0] for x in std_stars])
 
+# print(std_stars)
+# print(add_mag['MAIN_ID'])
+
 print("Here are all the standard stars used this night: ")
 
 for ind, std in enumerate(std_stars):
+	# print(add_mag[ind])
 	print('%s \t %.2f \t %s'%(std, add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
 	fn = '%s_sen_input.sen'%std 
 	f = open(fn, 'w')
 	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = A0"%Vmag[ind])
-	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
 	f.close()
 
 	tfn = '%s_telluric_input.tel'%std 

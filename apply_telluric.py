@@ -47,9 +47,11 @@ date = date_obj.isot[0:10]
 timeobs = date_obj.isot[11:]
 obj = (hdr[0].header['TARGET']).strip()
 sn_coord = SkyCoord(ra = hdr[0].header['RA']*u.deg, dec = hdr[0].header['DEC']*u.deg)
+
+telluric_name = tell.split('_')[0]
  
-out_name2 = obj+'_'+tel+'_'+inst+'_'+date+'.flm'
-out_plot = obj+'_'+tel+'_'+inst+'_'+date+'.png'
+out_name2 = obj+'_'+telluric_name+'_'+tel+'_'+inst+'_'+date+'.flm'
+out_plot =  obj+'_'+telluric_name+'_'+tel+'_'+inst+'_'+date+'.png'
 
 #Define tables to write out
 
@@ -59,8 +61,8 @@ spec.meta['comments'] = ['wavelength flux fluxerr', 'GROUPS UCSC,YSE,KITS', 'SNI
 							'OBS_DATE %s %s'%(date, timeobs), 'INSTRUMENT %s'%inst,
 							'RA %f'%sn_coord.ra.deg, 'DEC %f'%sn_coord.dec.deg]
 
-asci.write(np.array([wave,flux_corr, sig_corr]).T, out_name, \
-    names = ['wavelength', 'flux', 'fluxerr'], format = 'csv', overwrite = True)
+# asci.write(np.array([wave,flux_corr, sig_corr]).T, out_name, \
+#     names = ['wavelength', 'flux', 'fluxerr'], format = 'csv', overwrite = True)
 
 asci.write(spec , out_name2, format = 'no_header', delimiter = ' ', overwrite = True)
 
