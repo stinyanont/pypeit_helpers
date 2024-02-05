@@ -156,7 +156,10 @@ for ind, i in enumerate(unique_science):
 	sci_fn.sort()
 	for fn in sci_fn:
 		obj_id_full = fits.getheader(fn)['EXT0000']
-		obj_id = obj_id_full.split('-')[0]+'-'+obj_id_full.split('-')[1]
+		if 'ORDER' in obj_id_full.split('-')[-1]:
+			obj_id = obj_id_full.split('-')[0]+'-'+obj_id_full.split('-')[1]
+		else:
+			obj_id = obj_id_full
 		f.write('%s \t|\t%s\n'%(fn, obj_id))
 	f.write('coadd1d end')
 	f.close()
