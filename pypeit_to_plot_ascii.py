@@ -2,7 +2,7 @@
 import astropy.io.fits as fits
 import astropy.io.ascii as asci
 import numpy as np 
-import os, sys, glob
+import os, sys, glob, argparse
 import matplotlib.pyplot as plt
 from scipy.ndimage import median_filter
 from astropy.time import Time
@@ -12,23 +12,46 @@ import astropy.units as u
 
 if __name__ == '__main__':
     #read files in
-    files = glob.glob(sys.argv[1])
+
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('filename')     # files to be converted
+    parser.add_argument('--minwl')      # minimum wavelength
+    parser.add_argument('--obj_name')
+    parser.add_argument('--smooth_size')
+
+    args = parser.parse_args()
+
+    files = glob.glob(args.filename)
     files.sort()
 
-    if len(sys.argv) > 2:
-        obj_name = sys.argv[2]
+    if args.minwl is not None:
+        minwl = float(args.minwl)
     else:
-        obj_name = None
-
-    if len(sys.argv) > 3:
-        smooth_size = int(sys.argv[3])
+        minwl = None
+    obj_name = args.obj_name
+    if args.smooth_size is not None:
+        smooth_size = int(args.smooth_size)
     else:
         smooth_size = None
 
-    if len(sys.argv) > 4 :
-        minwl= float(sys.argv[4])
-    else:
-        minwl = None
+    print(minwl, obj_name, smooth_size)
+
+    # if len(sys.argv) > 2:
+    #     obj_name = sys.argv[2]
+    # else:
+    #     obj_name = None
+
+    # if len(sys.argv) > 3:
+    #     smooth_size = int(sys.argv[3])
+    # else:
+    #     smooth_size = None
+
+    # if len(sys.argv) > 4 :
+    #     minwl= float(sys.argv[4])
+    # else:
+    #     minwl = None
 
     for fn in files:
         hdr = fits.open(fn)
@@ -57,6 +80,10 @@ if __name__ == '__main__':
         asci.write(spec, out_txt, format = 'no_header', delimiter = ' ', overwrite = True)
 
         ##Deal with range
+
+        #Clip bogus points with wl = 0
+        if np.min(spec['wavelength']) < 2000:
+            spec = spec[spec['wavelength'] > 4000]     
         # good_snr = spec[1,:]/spec[2,:] > 5
         if np.max(spec['wavelength'] > 15000):
             YJ = np.logical_and(spec['wavelength'] > 10000, spec['wavelength'] < 13000)
@@ -66,6 +93,8 @@ if __name__ == '__main__':
             # good_snr = np.logical_and(good, spec[0,:] , 13500)
             good_snr = np.logical_or(YJ, H)
             good_snr = np.logical_or(good_snr, K)
+        # elif np.min(spec['wavelength'] < 3000):
+        #     good_snr = spec['wavelength'] > 3000
         else:
             good_snr = (spec['flux'] > 5*spec['fluxerr'])
 

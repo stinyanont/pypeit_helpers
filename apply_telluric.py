@@ -55,7 +55,7 @@ out_plot =  obj+'_'+telluric_name+'_'+tel+'_'+inst+'_'+date+'.png'
 
 #Define tables to write out
 
-spec = Table(np.array([wave,flux_corr, sig_corr]).T, names = ['wavelength', 'flux', 'fluxerr'])
+spec = Table(np.array([wave[wave>0],flux_corr[wave>0], sig_corr[wave>0]]).T, names = ['wavelength', 'flux', 'fluxerr'])
 
 spec.meta['comments'] = ['wavelength flux fluxerr', 'GROUPS UCSC,YSE,KITS', 'SNID %s'%(obj), 'OBS_GROUP UCSC', 
 							'OBS_DATE %s %s'%(date, timeobs), 'INSTRUMENT %s'%inst,
@@ -64,6 +64,7 @@ spec.meta['comments'] = ['wavelength flux fluxerr', 'GROUPS UCSC,YSE,KITS', 'SNI
 # asci.write(np.array([wave,flux_corr, sig_corr]).T, out_name, \
 #     names = ['wavelength', 'flux', 'fluxerr'], format = 'csv', overwrite = True)
 
+#filter out points with wl = 0
 asci.write(spec , out_name2, format = 'no_header', delimiter = ' ', overwrite = True)
 
 
@@ -87,10 +88,11 @@ fig, ax = plt.subplots(1,1,figsize = (15,8))
 
 #smooth with median 
 smooth_size = None
+to_plot = spec['wavelength'] > 0
 if smooth_size is None:
-    ax.step(spec['wavelength'], spec['flux'], lw=1)
+    ax.step(spec['wavelength'][to_plot], spec['flux'][to_plot], lw=1)
 else:
-    ax.step(spec['wavelength'], median_filter(spec['flux'], size = smooth_size))
+    ax.step(spec['wavelength'][to_plot], median_filter(spec['flux'][to_plot], size = smooth_size))
 ax.tick_params(labelsize = 18)
 ax.set_ylabel(r'$F_\lambda$ ($\rm erg\, s^{-1} \, cm^{-2}\, \AA^{-1}$)', fontsize = 18)
 ax.set_xlabel(r'Wavelength ($\rm \AA$)', fontsize = 18)

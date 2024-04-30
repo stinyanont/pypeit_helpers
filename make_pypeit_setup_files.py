@@ -14,11 +14,21 @@ pypeit setup files necessary to run sensitivity function, coadditions, and tellu
 
 files = sys.argv[1]
 
+#For IR, this script will match standard stars and generate telluric calibration
+if len(sys.argv) > 2:
+	band = sys.argv[2]
+	if band not in ["optical", "IR"]:
+		print("Band can be optical or IR. Default to IR.")
+		band = 'IR'
+else:
+	band = 'IR'
+
 #Find where data start
 f = open(files, 'r')
 header_line = None
 valid_line = 0
 for line in f:
+	# print(valid_line, header_line, line)
 	if len(line.strip()) > 0:
 		# print(line.strip())
 		if line.strip()[0] != '#':
@@ -27,12 +37,13 @@ for line in f:
 				header_line = valid_line
 	# else:
 	# 	valid_line += 1
-# print(header_line)
+print(header_line)
 
-giant_table = asci.read(files, format = 'fixed_width', header_start=header_line-1, data_start=header_line)
+giant_table = asci.read(files, format = 'csv', delimiter = '|',  
+	        header_start=header_line-1, data_start=header_line, comment = '#')
 #remove "data end"
 giant_table = giant_table[:-1]
-# print(giant_table)
+print(giant_table)
 
 #STANDARD STARS
 std_stars = list(set(giant_table['target'][giant_table['frametype'] == 'standard']))
@@ -67,9 +78,10 @@ for ind, std in enumerate(std_stars):
 ############################################GENERATE FLUX CALIBRATION AND COADD FILES.########################################################## 
 #Matching up science to standard
 unique_science = table.unique(giant_table[(giant_table['frametype'] == 'arc,science,tilt')|(giant_table['frametype'] =='science')], 'target')
-sci_coord = SkyCoord(ra = unique_science['ra']*u.deg, dec = unique_science['dec']*u.deg)
+
+sci_coord = SkyCoord(ra = unique_science['ra'], dec = unique_science['dec'], unit = (u.deg, u.deg))
 unique_standard = table.unique(giant_table[giant_table['frametype'] == 'standard'], 'target')
-std_coord = SkyCoord(ra = unique_standard['ra']*u.deg, dec = unique_standard['dec']*u.deg)
+std_coord = SkyCoord(ra = unique_standard['ra'], dec = unique_standard['dec'], unit = (u.deg, u.deg))
 
 print(unique_science['target','ra','dec','mjd'])
 print(unique_standard['target','ra','dec','mjd'])
@@ -78,25 +90,32 @@ print("Check if the following science - telluric association is correct.")
 
 res = []
 for ind, i in enumerate(unique_science):
+	# print(sci_coord, std_coord)
 	sep = sci_coord[ind].separation(std_coord)
+	# print(unique_science[ind]['airmass'])
 	am_diff = unique_science[ind]['airmass'] - unique_standard['airmass']
 	time_sep = (Time(unique_standard['mjd'], format = 'mjd') - Time(i['mjd'], format = 'mjd')).to(u.min)
-	print('for %s'%i['target'])
+	print('Computing separations for %s'%i['target'])
 	for j in range(len(sep)):
 		print(unique_standard[j]['target'], sep[j].to(u.deg), time_sep[j], am_diff[j])
-	sep[np.abs(time_sep) > 55*u.min] = np.nan
-	am_diff[np.abs(time_sep) > 55*u.min] = np.nan
+	if band == 'IR': #impose time limit on standard
+		sep[np.abs(time_sep) > 65*u.min] = np.nan
+		am_diff[np.abs(time_sep) > 65*u.min] = np.nan
+	# print(sep, time_sep)
 	print("min separation: "+unique_standard[np.nanargmin(np.abs(sep))]['target'])
 	print("min time: "+unique_standard[np.nanargmin(np.abs(time_sep))]['target'])
 	print("min airmass diff: "+unique_standard[np.nanargmin(np.abs(am_diff))]['target'])
 	res += [np.nanargmin(np.abs(sep))]
 
+import pdb
+
+# pdb.set_trace()
 
 for ind, i in enumerate(unique_science):
-    print(
+    print( 
         unique_science[ind]["target"],
         # sci_coord[ind].to_string('hmsdms'),
-        unique_standard[res[ind]]["target"],
+        unique_standard[res[ind]]["target"]
         # std_coord[res[ind]].to_string('hmsdms'),
     )
 
@@ -149,8 +168,10 @@ for ind, i in enumerate(unique_science):
 	sci_name = unique_science[ind]["target"]
 	std_name = unique_standard[res[ind]]["target"]
 	f = open('%s_%s.coadd'%(sci_name, std_name), 'w')
-	f.write("[coadd1d]\n\tcoaddfile = '%s_corrected_coadd.fits'\n\tsensfuncfile = '%s_sensitivity.fits'\n"%(sci_name, std_name))
-	f.write("coadd1d read\npath .\nfilename | obj_id\n")
+	# f.write("[coadd1d]\n\tcoaddfile = '%s_corrected_coadd.fits'\n\tsensfuncfile = '%s_sensitivity.fits'\n"%(sci_name, std_name))
+	f.write("[coadd1d]\n\tcoaddfile = '%s_corrected_coadd.fits'\n"%(sci_name))
+	# f.write("coadd1d read\npath .\nfilename | obj_id\n")
+	f.write("coadd1d read\npath .\nfilename | obj_id | sensfile | setup_id \n")
 	#Now loop through all the 1d file from the given object
 	sci_fn = glob.glob('spec1d*%s*.fits'%sci_name)
 	sci_fn.sort()
@@ -160,7 +181,8 @@ for ind, i in enumerate(unique_science):
 			obj_id = obj_id_full.split('-')[0]+'-'+obj_id_full.split('-')[1]
 		else:
 			obj_id = obj_id_full
-		f.write('%s \t|\t%s\n'%(fn, obj_id))
+		# f.write('%s \t|\t%s\n'%(fn, obj_id))
+		f.write('%s \t|\t %s \t|\t %s_sensitivity.fits \t|\t A \n'%(fn, obj_id, std_name)) #add new columns
 	f.write('coadd1d end')
 	f.close()
 
@@ -168,15 +190,18 @@ for ind, i in enumerate(unique_standard):
 	sci_name = unique_standard[ind]["target"]
 	std_name = unique_standard[ind]["target"]
 	f = open('%s_%s.coadd'%(sci_name, std_name), 'w')
-	f.write("[coadd1d]\n\tcoaddfile = '%s_corrected_coadd.fits'\n\tsensfuncfile = '%s_sensitivity.fits'\n"%(sci_name, std_name))
-	f.write("coadd1d read\npath .\nfilename | obj_id\n")
+	#Old version, sensfuncfile as a parameter. Move to a column
+	# f.write("[coadd1d]\n\tcoaddfile = '%s_corrected_coadd.fits'\n\tsensfuncfile = '%s_sensitivity.fits'\n"%(sci_name, std_name))
+	#\tsensfuncfile = '%s_sensitivity.fits'\n
+	f.write("[coadd1d]\n\tcoaddfile = '%s_corrected_coadd.fits'\n"%(sci_name))
+	f.write("coadd1d read\npath .\nfilename | obj_id | sensfile | setup_id \n")
 	#Now loop through all the 1d file from the given object
 	sci_fn = glob.glob('spec1d*%s*.fits'%sci_name)
 	sci_fn.sort()
 	for fn in sci_fn:
 		obj_id_full = fits.getheader(fn)['EXT0000']
 		obj_id = obj_id_full.split('-')[0]+'-'+obj_id_full.split('-')[1]
-		f.write('%s \t|\t%s\n'%(fn, obj_id))
+		f.write('%s \t|\t %s \t|\t %s_sensitivity.fits \t|\t A \n'%(fn, obj_id, std_name)) #add new columns
 	f.write('coadd1d end')
 	f.close()
 
@@ -191,6 +216,7 @@ for fn in all_sen_func:
 	std_name = fn.split('_')[0]
 	std_spec = glob.glob('spec1d_*%s*.fits'%std_name)
 	std_spec.sort()
+	print(std_name, std_spec)
 	f.write('pypeit_sensfunc %s -o %s_sensitivity.fits -s %s\n'%(std_spec[0], std_name, fn))
 f.close()
 
@@ -207,7 +233,7 @@ for fn in all_coadd_file:
 f = open('telluric.bash', 'w')
 f.write('#!/bin/bash\n')
 for ind, i in enumerate(unique_science):
-	f.write('pypeit_tellfit %s_corrected_coadd.fits --objmodel poly \n'%i["target"])
+	f.write('# pypeit_tellfit %s_corrected_coadd.fits --objmodel poly \n'%i["target"])
 for ind, i in enumerate(unique_standard):
 	f.write('pypeit_tellfit %s_corrected_coadd.fits -t %s_telluric_input.tel \n'%(i["target"], i["target"]))
 f.close()
