@@ -18,8 +18,11 @@ tell = sys.argv[2]
 
 wave, wave_grid_mid, flux, ivar, mask, meta_spec, header = general_spec_reader(sci, ret_flam=False)
 
+sci_airmass = meta_spec['core']['AIRMASS']
+
 #Read the telluric object
 TelObj = fits.open(tell)[1].data
+tel_airmass = fits.open(tell)[1].header['AIRMASS']
 
 tel_wave = TelObj['WAVE'][0]
 tel_tel  = TelObj['TELLURIC'][0]
@@ -28,6 +31,10 @@ tel_tel  = TelObj['TELLURIC'][0]
 #interpolate the telluric spectrum to the observed wavelength
 tell_interp = scipy.interpolate.interp1d(tel_wave, tel_tel, bounds_error=False, fill_value=0.0)
 telluric = tell_interp(wave)
+
+#scale with airmass
+#Matt Siebert's UCSC spec code
+telluric = telluric**((sci_airmass/tel_airmass)**0.55)
 
 flux_corr = flux*utils.inverse(telluric)
 ivar_corr = (telluric > 0.0) * ivar * telluric * telluric

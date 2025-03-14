@@ -9,6 +9,7 @@ from astropy.time import Time
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+import pdb
 
 if __name__ == '__main__':
     #read files in
@@ -100,7 +101,7 @@ if __name__ == '__main__':
 
         if minwl is not None:
             good_snr = np.logical_and(good_snr, spec['wavelength'] > minwl)
-
+        # pdb.set_trace()
         max_y = np.nanmax(median_filter(spec['flux'][good_snr], size= 5))
         min_y = np.nanmin(median_filter(spec['flux'][good_snr], size= 5))
         print(fn, min_y, max_y)

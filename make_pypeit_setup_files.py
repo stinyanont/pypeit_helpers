@@ -52,7 +52,11 @@ std_stars = list(set(giant_table['target'][giant_table['frametype'] == 'standard
 # for std in std_stars:
 Simbad.add_votable_fields("flux(V)")
 Simbad.add_votable_fields("sptype")
+# try:
 add_mag = Simbad.query_objects([x.split('-')[0] for x in std_stars])
+# except:
+# print("Simbad query fails")
+# add_mag = table.Table([[-99]*len(std_stars), ['None']*len(std_stars) ], names = ('FLUX_V', 'SP_TYPE'))
 
 # print(std_stars)
 # print(add_mag['MAIN_ID'])
@@ -92,15 +96,22 @@ res = []
 for ind, i in enumerate(unique_science):
 	# print(sci_coord, std_coord)
 	sep = sci_coord[ind].separation(std_coord)
-	# print(unique_science[ind]['airmass'])
-	am_diff = unique_science[ind]['airmass'] - unique_standard['airmass']
+	print(unique_science[ind]['airmass'], unique_standard['airmass'])
+	# print(unique_standard['mjd'], i['mjd'])
+	try: 
+		am_diff = unique_science[ind]['airmass'] - unique_standard['airmass']
+	except:
+		# print('whoops')
+		am_diff = np.array([float(unique_science[ind]['airmass']) - float(unique_standard['airmass'][0])])
+	# 
 	time_sep = (Time(unique_standard['mjd'], format = 'mjd') - Time(i['mjd'], format = 'mjd')).to(u.min)
 	print('Computing separations for %s'%i['target'])
 	for j in range(len(sep)):
 		print(unique_standard[j]['target'], sep[j].to(u.deg), time_sep[j], am_diff[j])
+	# print(sep, time_sep)
 	if band == 'IR': #impose time limit on standard
-		sep[np.abs(time_sep) > 65*u.min] = np.nan
-		am_diff[np.abs(time_sep) > 65*u.min] = np.nan
+		sep[np.abs(time_sep) > 95*u.min] = np.nan
+		am_diff[np.abs(time_sep) > 95*u.min] = np.nan
 	# print(sep, time_sep)
 	print("min separation: "+unique_standard[np.nanargmin(np.abs(sep))]['target'])
 	print("min time: "+unique_standard[np.nanargmin(np.abs(time_sep))]['target'])
