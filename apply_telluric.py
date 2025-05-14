@@ -11,6 +11,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import median_filter
 
+def telluric_band_rms(wave, flux):
+    """
+    Compute the RMS inside water bands and CO2 to minimize
+    """
+    co2_band = (wave > 19750) & (wave < 21000)
+    waterJ = (wave > 13400) & (wave < 14400)
+
+    # rms = 
+
 
 
 sci  = sys.argv[1]
