@@ -288,6 +288,10 @@ for ind, i in enumerate(unique_science):
 	sci_file = sci_name+'_corrected_coadd.fits'
 	std_model = std_name+'_corrected_coadd_tellmodel.fits'
 	f.write("python %s %s %s \n"%(path_to_script, sci_file, std_model))
+#NEW! do telluric QA plots
+path_to_script = os.path.dirname(os.path.realpath(__file__))+'/plot_telluric.py'
+
+f.write("python "+path_to_script)
 f.close()
 
 #Lastly, convert to ascii and png
