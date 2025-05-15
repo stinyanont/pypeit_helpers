@@ -66,8 +66,8 @@ std_stars = list(set(giant_table['target'][giant_table['frametype'] == 'standard
 
 
 # for std in std_stars:
-Simbad.add_votable_fields("flux(V)")
-Simbad.add_votable_fields("sptype")
+Simbad.add_votable_fields("V")
+Simbad.add_votable_fields("sp_type")
 # try:
 add_mag = Simbad.query_objects([x.split('-')[0] for x in std_stars])
 # print(add_mag)
