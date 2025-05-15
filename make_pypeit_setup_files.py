@@ -70,6 +70,7 @@ Simbad.add_votable_fields("flux(V)")
 Simbad.add_votable_fields("sptype")
 # try:
 add_mag = Simbad.query_objects([x.split('-')[0] for x in std_stars])
+# print(add_mag)
 # except:
 # print("Simbad query fails")
 # add_mag = table.Table([[-99]*len(std_stars), ['None']*len(std_stars) ], names = ('FLUX_V', 'SP_TYPE'))
@@ -81,18 +82,24 @@ print("Here are all the standard stars used this night: ")
 
 for ind, std in enumerate(std_stars):
 	# print(add_mag[ind])
-	print('%s \t %.2f \t %s'%(std, add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	# print('%s \t %.2f \t %s'%(std, add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	print('%s \t %.2f \t %s'%(std, add_mag['V'][ind],  add_mag['sp_type'][ind]))
+
 	fn = '%s_sen_input.sen'%std 
 	f = open(fn, 'w')
 	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = A0"%Vmag[ind])
-	f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	# f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
+	f.write("[sensfunc]\n\talgorithm = IR\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['V'][ind],  add_mag['sp_type'][ind]))
+
 	f.close()
 
 	tfn = '%s_telluric_input.tel'%std 
 	tf = open(tfn, 'w')
 	# tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s"%(add_mag['FLUX_V'][ind],  add_mag['SP_TYPE'][ind]))
 	#For some reason a realistic magnitude makes bad telluric fit!?
-	tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s\n\tpolyorder = 5"%(10,  add_mag['SP_TYPE'][ind]))
+	# tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s\n\tpolyorder = 5"%(10,  add_mag['SP_TYPE'][ind]))
+	tf.write("[telluric]\n\tobjmodel = star\n\tstar_mag = %.2f\n\tstar_type = %s\n\tpolyorder = 5"%(10,  add_mag['sp_type'][ind]))
+
 	tf.close()
 
 ############################################GENERATE FLUX CALIBRATION AND COADD FILES.########################################################## 
