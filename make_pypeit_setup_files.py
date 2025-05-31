@@ -319,8 +319,5 @@ for line in tellstd:
 	if line[0] != '#':
 		f.write(line)
 
-#NEW! do telluric QA plots
-path_to_script = os.path.dirname(os.path.realpath(__file__))+'/plot_telluric.py'
-
 f.write("python "+path_to_script)
 f.close()
