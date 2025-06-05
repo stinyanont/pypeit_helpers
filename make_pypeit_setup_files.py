@@ -291,7 +291,7 @@ for ind, i in enumerate(unique_science):
 #NEW! do telluric QA plots
 path_to_script = os.path.dirname(os.path.realpath(__file__))+'/plot_telluric.py'
 
-f.write("python "+path_to_script)
+f.write("python "+path_to_script+'\n')
 f.close()
 
 #Lastly, convert to ascii and png
@@ -319,5 +319,4 @@ for line in tellstd:
 	if line[0] != '#':
 		f.write(line)
 
-f.write("python "+path_to_script)
 f.close()
